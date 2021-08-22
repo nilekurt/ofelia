@@ -37,103 +37,103 @@ type Config struct {
 
 // BuildFromDockerLabels builds a scheduler using the config from a docker labels
 func BuildFromDockerLabels() (*core.Scheduler, error) {
-	c := &Config{}
+	config := &Config{}
 
-	d, err := c.buildDockerClient()
+	dockerClient, err := config.buildDockerClient()
 	if err != nil {
 		return nil, err
 	}
 
-	labels, err := getLabels(d)
+	labels, err := getLabels(dockerClient)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c.buildFromDockerLabels(labels); err != nil {
+	if err := config.buildFromDockerLabels(labels); err != nil {
 		return nil, err
 	}
 
-	return c.build()
+	return config.build()
 }
 
 // BuildFromFile builds a scheduler using the config from a file
 func BuildFromFile(filename string) (*core.Scheduler, error) {
-	c := &Config{}
-	if err := gcfg.ReadFileInto(c, filename); err != nil {
+	config := &Config{}
+	if err := gcfg.ReadFileInto(config, filename); err != nil {
 		return nil, err
 	}
 
-	return c.build()
+	return config.build()
 }
 
 // BuildFromString builds a scheduler using the config from a string
-func BuildFromString(config string) (*core.Scheduler, error) {
-	c := &Config{}
-	if err := gcfg.ReadStringInto(c, config); err != nil {
+func BuildFromString(configString string) (*core.Scheduler, error) {
+	config := &Config{}
+	if err := gcfg.ReadStringInto(config, configString); err != nil {
 		return nil, err
 	}
 
-	return c.build()
+	return config.build()
 }
 
-func (c *Config) build() (*core.Scheduler, error) {
-	defaults.SetDefaults(c)
+func (config *Config) build() (*core.Scheduler, error) {
+	defaults.SetDefaults(config)
 
-	d, err := c.buildDockerClient()
+	dockerClient, err := config.buildDockerClient()
 	if err != nil {
 		return nil, err
 	}
 
-	sh := core.NewScheduler(c.buildLogger())
-	c.buildSchedulerMiddlewares(sh)
+	sched := core.NewScheduler(config.buildLogger())
+	config.buildSchedulerMiddlewares(sched)
 
-	for name, j := range c.ExecJobs {
-		defaults.SetDefaults(j)
+	for name, job := range config.ExecJobs {
+		defaults.SetDefaults(job)
 
-		j.Client = d
-		j.Name = name
-		j.buildMiddlewares()
-		sh.AddJob(j)
+		job.Client = dockerClient
+		job.Name = name
+		job.buildMiddlewares()
+		sched.AddJob(job)
 	}
 
-	for name, j := range c.RunJobs {
-		defaults.SetDefaults(j)
+	for name, job := range config.RunJobs {
+		defaults.SetDefaults(job)
 
-		j.Client = d
-		j.Name = name
-		j.buildMiddlewares()
-		sh.AddJob(j)
+		job.Client = dockerClient
+		job.Name = name
+		job.buildMiddlewares()
+		sched.AddJob(job)
 	}
 
-	for name, j := range c.LocalJobs {
-		defaults.SetDefaults(j)
+	for name, job := range config.LocalJobs {
+		defaults.SetDefaults(job)
 
-		j.Name = name
-		j.buildMiddlewares()
-		sh.AddJob(j)
+		job.Name = name
+		job.buildMiddlewares()
+		sched.AddJob(job)
 	}
 
-	for name, j := range c.ServiceJobs {
-		defaults.SetDefaults(j)
-		j.Name = name
-		j.Client = d
-		j.buildMiddlewares()
-		sh.AddJob(j)
+	for name, job := range config.ServiceJobs {
+		defaults.SetDefaults(job)
+		job.Name = name
+		job.Client = dockerClient
+		job.buildMiddlewares()
+		sched.AddJob(job)
 	}
 
-	return sh, nil
+	return sched, nil
 }
 
-func (c *Config) buildDockerClient() (*docker.Client, error) {
-	d, err := docker.NewClientFromEnv()
+func (*Config) buildDockerClient() (*docker.Client, error) {
+	dockerClient, err := docker.NewClientFromEnv()
 	if err != nil {
 		return nil, err
 	}
 
-	return d, nil
+	return dockerClient, nil
 }
 
-func (c *Config) buildLogger() core.Logger {
+func (config *Config) buildLogger() core.Logger {
 	stdout := logging.NewLogBackend(os.Stdout, "", 0)
 	// Set the backends to be used.
 	logging.SetBackend(stdout)
@@ -142,10 +142,11 @@ func (c *Config) buildLogger() core.Logger {
 	return logging.MustGetLogger("ofelia")
 }
 
-func (c *Config) buildSchedulerMiddlewares(sh *core.Scheduler) {
-	sh.Use(middlewares.NewSlack(&c.Global.SlackConfig))
-	sh.Use(middlewares.NewSave(&c.Global.SaveConfig))
-	sh.Use(middlewares.NewMail(&c.Global.MailConfig))
+func (config *Config) buildSchedulerMiddlewares(sched *core.Scheduler) {
+	global := &config.Global
+	sched.Use(middlewares.NewSlack(&global.SlackConfig))
+	sched.Use(middlewares.NewSave(&global.SaveConfig))
+	sched.Use(middlewares.NewMail(&global.MailConfig))
 }
 
 // ExecJobConfig contains all configuration params needed to build a ExecJob
@@ -157,11 +158,12 @@ type ExecJobConfig struct {
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
 
-func (c *ExecJobConfig) buildMiddlewares() {
-	c.ExecJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
-	c.ExecJob.Use(middlewares.NewSlack(&c.SlackConfig))
-	c.ExecJob.Use(middlewares.NewSave(&c.SaveConfig))
-	c.ExecJob.Use(middlewares.NewMail(&c.MailConfig))
+func (config *ExecJobConfig) buildMiddlewares() {
+	job := &config.ExecJob
+	job.Use(middlewares.NewOverlap(&config.OverlapConfig))
+	job.Use(middlewares.NewSlack(&config.SlackConfig))
+	job.Use(middlewares.NewSave(&config.SaveConfig))
+	job.Use(middlewares.NewMail(&config.MailConfig))
 }
 
 // RunServiceConfig contains all configuration params needed to build a RunJob
@@ -181,11 +183,12 @@ type RunJobConfig struct {
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
 
-func (c *RunJobConfig) buildMiddlewares() {
-	c.RunJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
-	c.RunJob.Use(middlewares.NewSlack(&c.SlackConfig))
-	c.RunJob.Use(middlewares.NewSave(&c.SaveConfig))
-	c.RunJob.Use(middlewares.NewMail(&c.MailConfig))
+func (config *RunJobConfig) buildMiddlewares() {
+	job := &config.RunJob
+	job.Use(middlewares.NewOverlap(&config.OverlapConfig))
+	job.Use(middlewares.NewSlack(&config.SlackConfig))
+	job.Use(middlewares.NewSave(&config.SaveConfig))
+	job.Use(middlewares.NewMail(&config.MailConfig))
 }
 
 // LocalJobConfig contains all configuration params needed to build a RunJob
@@ -197,16 +200,18 @@ type LocalJobConfig struct {
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
 
-func (c *LocalJobConfig) buildMiddlewares() {
-	c.LocalJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
-	c.LocalJob.Use(middlewares.NewSlack(&c.SlackConfig))
-	c.LocalJob.Use(middlewares.NewSave(&c.SaveConfig))
-	c.LocalJob.Use(middlewares.NewMail(&c.MailConfig))
+func (config *LocalJobConfig) buildMiddlewares() {
+	job := &config.LocalJob
+	job.Use(middlewares.NewOverlap(&config.OverlapConfig))
+	job.Use(middlewares.NewSlack(&config.SlackConfig))
+	job.Use(middlewares.NewSave(&config.SaveConfig))
+	job.Use(middlewares.NewMail(&config.MailConfig))
 }
 
-func (c *RunServiceConfig) buildMiddlewares() {
-	c.RunServiceJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
-	c.RunServiceJob.Use(middlewares.NewSlack(&c.SlackConfig))
-	c.RunServiceJob.Use(middlewares.NewSave(&c.SaveConfig))
-	c.RunServiceJob.Use(middlewares.NewMail(&c.MailConfig))
+func (config *RunServiceConfig) buildMiddlewares() {
+	job := &config.RunServiceJob
+	job.Use(middlewares.NewOverlap(&config.OverlapConfig))
+	job.Use(middlewares.NewSlack(&config.SlackConfig))
+	job.Use(middlewares.NewSave(&config.SaveConfig))
+	job.Use(middlewares.NewMail(&config.MailConfig))
 }
