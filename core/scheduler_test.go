@@ -29,16 +29,29 @@ func (s *SuiteScheduler) TestStartStop(c *C) {
 	job.Schedule = "@every 1s"
 
 	sc := NewScheduler(&TestLogger{})
-	err := sc.AddJob(job)
+
+	c.Assert(sc.IsRunning(), Equals, false)
+
+	var err error
+	err = sc.Stop()
+	c.Assert(err, Equals, ErrAlreadyStopped)
+
+	err = sc.AddJob(job)
 	c.Assert(err, IsNil)
 
 	sc.Start()
 	c.Assert(sc.IsRunning(), Equals, true)
 
+	err = sc.Start()
+	c.Assert(err, Equals, ErrAlreadyStarted)
+
 	time.Sleep(time.Second * 2)
 
 	sc.Stop()
 	c.Assert(sc.IsRunning(), Equals, false)
+
+	err = sc.Stop()
+	c.Assert(err, Equals, ErrAlreadyStopped)
 }
 
 func (s *SuiteScheduler) TestMergeMiddlewaresSame(c *C) {
