@@ -37,8 +37,7 @@ func (s *Scheduler) AddJob(j Job) error {
 		return ErrEmptySchedule
 	}
 
-	err := s.cron.AddJob(j.GetSchedule(), &jobWrapper{s, j})
-	if err != nil {
+	if err := s.cron.AddJob(j.GetSchedule(), &jobWrapper{s, j}); err != nil {
 		return err
 	}
 

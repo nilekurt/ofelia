@@ -17,7 +17,7 @@ var (
 	// it as skipped.
 	ErrSkippedExecution   = errors.New("skipped execution")
 	ErrUnexpected         = errors.New("error unexpected, docker has returned exit code -1, maybe wrong user?")
-	ErrMaxTimeRunning     = errors.New("the job has exceed the maximum allowed time running.")
+	ErrMaxTimeRunning     = errors.New("the job has exceed the maximum allowed time running")
 	ErrLocalImageNotFound = errors.New("couldn't find image on the host")
 )
 
@@ -195,7 +195,7 @@ type middlewareContainer struct {
 
 func (c *middlewareContainer) Use(ms ...Middleware) {
 	if c.m == nil {
-		c.m = make(map[string]Middleware, 0)
+		c.m = make(map[string]Middleware)
 	}
 
 	for _, m := range ms {
@@ -242,7 +242,7 @@ func randomID() string {
 func buildFindLocalImageOptions(image string) docker.ListImagesOptions {
 	return docker.ListImagesOptions{
 		Filters: map[string][]string{
-			"reference": []string{image},
+			"reference": {image},
 		},
 	}
 }

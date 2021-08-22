@@ -36,7 +36,7 @@ func getLabels(d *docker.Client) (map[string]map[string]string, error) {
 	}
 
 	if len(conts) == 0 {
-		return nil, errors.New("Couldn't find containers with label 'ofelia.enabled=true'")
+		return nil, errors.New("couldn't find containers with label 'ofelia.enabled=true'")
 	}
 
 	var labels = make(map[string]map[string]string)

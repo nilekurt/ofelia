@@ -1,7 +1,6 @@
 package core
 
 import (
-	"sync"
 	"sync/atomic"
 )
 
@@ -12,8 +11,6 @@ type BareJob struct {
 
 	middlewareContainer
 	running int32
-	lock    sync.Mutex
-	history []*Execution
 }
 
 func (j *BareJob) GetName() string {

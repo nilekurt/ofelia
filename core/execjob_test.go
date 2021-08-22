@@ -4,7 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/fsouza/go-dockerclient/testing"
 	. "gopkg.in/check.v1"
 )
@@ -47,7 +47,12 @@ func (s *SuiteExecJob) TestRun(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(executed, Equals, true)
 
-	container, err := s.client.InspectContainer(ContainerFixture)
+	opts := docker.InspectContainerOptions{
+		Context: nil,
+		ID:      ContainerFixture,
+		Size:    false,
+	}
+	container, err := s.client.InspectContainerWithOptions(opts)
 	c.Assert(err, IsNil)
 
 	exec, err := s.client.InspectExec(container.ExecIDs[0])
@@ -76,5 +81,5 @@ func (s *SuiteExecJob) buildContainer(c *C) {
 		Name:   ContainerFixture,
 		Config: &docker.Config{Image: "test"},
 	})
-
+	c.Assert(err, IsNil)
 }
