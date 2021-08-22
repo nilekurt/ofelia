@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 )
 
 var (
@@ -39,7 +39,7 @@ func (s *Scheduler) AddJob(j Job) error {
 		return ErrEmptySchedule
 	}
 
-	if err := s.cron.AddJob(j.GetSchedule(), &jobWrapper{s, j}); err != nil {
+	if _, err := s.cron.AddJob(j.GetSchedule(), &jobWrapper{s, j}); err != nil {
 		return err
 	}
 
