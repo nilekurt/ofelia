@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	ErrEmptyScheduler = errors.New("unable to start a empty scheduler.")
-	ErrEmptySchedule  = errors.New("unable to add a job with a empty schedule.")
+	ErrAlreadyStarted = errors.New("scheduler has already started")
+	ErrAlreadyStopped = errors.New("scheduler has already stopped")
+	ErrEmptyScheduler = errors.New("unable to start a empty scheduler")
+	ErrEmptySchedule  = errors.New("unable to add a job with a empty schedule")
 )
 
 type Scheduler struct {
@@ -46,6 +48,10 @@ func (s *Scheduler) AddJob(j Job) error {
 }
 
 func (s *Scheduler) Start() error {
+	if s.isRunning {
+		return ErrAlreadyStarted
+	}
+
 	if len(s.Jobs) == 0 {
 		return ErrEmptyScheduler
 	}
@@ -65,10 +71,13 @@ func (s *Scheduler) mergeMiddlewares() {
 }
 
 func (s *Scheduler) Stop() error {
+	if !s.isRunning {
+		return ErrAlreadyStopped
+	}
+
 	s.wg.Wait()
 	s.cron.Stop()
 	s.isRunning = false
-
 	return nil
 }
 
