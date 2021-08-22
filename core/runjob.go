@@ -196,7 +196,12 @@ func (j *RunJob) startContainer(e *Execution, c *docker.Container) error {
 }
 
 func (j *RunJob) getContainer(id string) (*docker.Container, error) {
-	container, err := j.Client.InspectContainer(id)
+	opts := docker.InspectContainerOptions{
+		Context: nil,
+		ID:      id,
+		Size:    false,
+	}
+	container, err := j.Client.InspectContainerWithOptions(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +224,12 @@ func (j *RunJob) watchContainer(containerID string) error {
 			return ErrMaxTimeRunning
 		}
 
-		c, err := j.Client.InspectContainer(containerID)
+		opts := docker.InspectContainerOptions{
+			Context: nil,
+			ID:      containerID,
+			Size:    false,
+		}
+		c, err := j.Client.InspectContainerWithOptions(opts)
 		if err != nil {
 			return err
 		}

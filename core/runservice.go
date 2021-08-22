@@ -83,7 +83,7 @@ func (j *RunServiceJob) buildService() (*swarm.Service, error) {
 	// we need to attach it to the same network
 	if j.Network != "" {
 		createSvcOpts.Networks = []swarm.NetworkAttachmentConfig{
-			swarm.NetworkAttachmentConfig{
+			{
 				Target: j.Network,
 			},
 		}
@@ -117,7 +117,7 @@ func (j *RunServiceJob) watchContainer(ctx *Context, svcID string) error {
 
 	svc, err := j.Client.InspectService(svcID)
 	if err != nil {
-		return fmt.Errorf("Failed to inspect service %s: %s", svcID, err.Error())
+		return fmt.Errorf("failed to inspect service %s: %s", svcID, err.Error())
 	}
 
 	// On every tick, check if all the services have completed, or have error out
@@ -126,7 +126,7 @@ func (j *RunServiceJob) watchContainer(ctx *Context, svcID string) error {
 
 	go func() {
 		defer wg.Done()
-		for _ = range svcChecker.C {
+		for range svcChecker.C {
 
 			if svc.CreatedAt.After(time.Now().Add(maxProcessDuration)) {
 				err = ErrMaxTimeRunning

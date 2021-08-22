@@ -13,7 +13,6 @@ type DaemonCommand struct {
 	ConfigFile         string `long:"config" description:"configuration file" default:"/etc/ofelia.conf"`
 	DockerLabelsConfig bool   `short:"d" long:"docker" description:"read configurations from docker labels"`
 
-	config    *Config
 	scheduler *core.Scheduler
 	signals   chan os.Signal
 	done      chan bool
